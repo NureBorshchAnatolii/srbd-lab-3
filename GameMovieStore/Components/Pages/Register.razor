@@ -1,0 +1,78 @@
+﻿@page "/register"
+@using System.ComponentModel.DataAnnotations
+@using System.Net
+@using GameMovieStore.Contracts.Services
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject IHttpContextAccessor Http
+
+<h3>Register</h3>
+
+<EditForm Model="Model" OnValidSubmit="Submit" FormName="register-form">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    
+    <div>
+        <label>Name: <InputText @bind-Value="Model!.Name"/></label>
+    </div>
+    <div>
+        <label>Surname: <InputText @bind-Value="Model!.Surname"/></label>
+    </div>
+    <div>
+        <label>Username: <InputText @bind-Value="Model!.Username"/></label>
+    </div>
+    <div>
+        <label>Password: <InputText type="password" @bind-Value="Model!.Password"/></label>
+    </div>
+    <div>
+        <button type="submit">Register</button>
+    </div>
+</EditForm>
+
+<p style="color:red">@_errorMessage</p>
+
+@code {
+    [SupplyParameterFromForm]
+    private RegisterModel? Model { get; set; }
+
+    private string _errorMessage = "";
+
+    protected override void OnInitialized() => Model ??= new();
+
+    private async Task Submit()
+    {
+        try
+        {
+            await AuthService.RegisterAsync(
+                Model!.Name,
+                Model!.Surname,
+                Model!.Username,
+                Model!.Password
+            );
+
+            Http.HttpContext!.Response.Redirect("/login");
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    public class RegisterModel
+    {
+        [Required(ErrorMessage = "Name is required")]
+        [StringLength(50, ErrorMessage = "Name must be less than 50 chars")]
+        public string Name { get; set; } = "";
+
+        [Required(ErrorMessage = "Surname is required")]
+        public string Surname { get; set; } = "";
+
+        [Required(ErrorMessage = "Username is required")]
+        [MinLength(3, ErrorMessage = "Username must be at least 3 chars")]
+        public string Username { get; set; } = "";
+
+        [Required(ErrorMessage = "Password is required")]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 chars")]
+        public string Password { get; set; } = "";
+    }
+}
