@@ -1,35 +1,64 @@
 ﻿@page "/register"
 @using System.ComponentModel.DataAnnotations
-@using System.Net
 @using GameMovieStore.Contracts.Services
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
 @inject IHttpContextAccessor Http
 
-<h3>Register</h3>
+<div class="auth-container">
+    <div class="auth-card">
+        <h3 class="text-center mb-4">Register</h3>
 
-<EditForm Model="Model" OnValidSubmit="Submit" FormName="register-form">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-    
-    <div>
-        <label>Name: <InputText @bind-Value="Model!.Name"/></label>
-    </div>
-    <div>
-        <label>Surname: <InputText @bind-Value="Model!.Surname"/></label>
-    </div>
-    <div>
-        <label>Username: <InputText @bind-Value="Model!.Username"/></label>
-    </div>
-    <div>
-        <label>Password: <InputText type="password" @bind-Value="Model!.Password"/></label>
-    </div>
-    <div>
-        <button type="submit">Register</button>
-    </div>
-</EditForm>
+        <EditForm Model="Model" OnSubmit="Submit" FormName="register-form">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger mb-3" />
 
-<p style="color:red">@_errorMessage</p>
+            <div class="form-group mb-3">
+                <label>Name</label>
+                <InputText class="form-control" @bind-Value="Model!.Name"/>
+            </div>
+
+            <div class="form-group mb-3">
+                <label>Surname</label>
+                <InputText class="form-control" @bind-Value="Model!.Surname"/>
+            </div>
+
+            <div class="form-group mb-3">
+                <label>Username</label>
+                <InputText class="form-control" @bind-Value="Model!.Username"/>
+            </div>
+
+            <div class="form-group mb-3">
+                <label>Password</label>
+                <InputText class="form-control" type="password" @bind-Value="Model!.Password"/>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Register</button>
+        </EditForm>
+
+        <p class="text-danger mt-2">@_errorMessage</p>
+    </div>
+</div>
+
+<style>
+    .auth-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .auth-card {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        width: 350px;
+    }
+
+    .form-group label {
+        font-weight: 500;
+    }
+</style>
 
 @code {
     [SupplyParameterFromForm]

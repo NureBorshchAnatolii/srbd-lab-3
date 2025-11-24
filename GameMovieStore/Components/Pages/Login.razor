@@ -5,24 +5,50 @@
 @inject NavigationManager Navigation
 @inject IHttpContextAccessor Http
 
-<h3>Login</h3>
+<div class="auth-container">
+    <div class="auth-card">
+        <h3 class="text-center mb-4">Login</h3>
 
-<EditForm Model="Model" OnSubmit="Submit" FormName="login-form">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+        <EditForm Model="Model" OnSubmit="Submit" FormName="login-form">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger mb-3" />
 
-    <div>
-        <label>Username: <InputText @bind-Value="Model!.Username"/></label>
-    </div>
-    <div>
-        <label>Password: <InputText type="password" @bind-Value="Model!.Password"/></label>
-    </div>
-    <div>
-        <button type="submit">Login</button>
-    </div>
-</EditForm>
+            <div class="form-group mb-3">
+                <label>Username</label>
+                <InputText class="form-control" @bind-Value="Model!.Username"/>
+            </div>
 
-<p style="color:red">@_errorMessage</p>
+            <div class="form-group mb-3">
+                <label>Password</label>
+                <InputText class="form-control" type="password" @bind-Value="Model!.Password"/>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Login</button>
+        </EditForm>
+
+        <p class="text-danger mt-2">@_errorMessage</p>
+    </div>
+</div>
+
+<style>
+    .auth-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .auth-card {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        width: 350px;
+    }
+
+    .form-group label {
+        font-weight: 500;
+    }
+</style>
 
 @code {
     [SupplyParameterFromForm]
@@ -36,11 +62,7 @@
     {
         try
         {
-            await AuthService.LoginAsync(
-                Model!.Username,
-                Model!.Password
-            );
-
+            await AuthService.LoginAsync(Model!.Username, Model!.Password);
             Http.HttpContext!.Response.Redirect("/");
         }
         catch (Exception ex)
