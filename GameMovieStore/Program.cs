@@ -1,6 +1,9 @@
 using GameMovieStore.Components;
+using GameMovieStore.Contracts.Repositories;
 using GameMovieStore.Contracts.Services;
+using GameMovieStore.Implementations.Repositories;
 using GameMovieStore.Implementations.Services;
+using GameMovieStore.Models;
 using GameMovieStore.Persistence.DbContext;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +34,12 @@ builder.Services.AddAuthorization();
 
 //Dependencies
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPurchaseService, PurchaseService>();
+builder.Services.AddScoped<IGameService, GameService>();
+builder.Services.AddScoped<IMovieService, MovieService>();
+builder.Services.AddScoped<IGenericRepository<Movie>, GenericRepository<Movie>>();
+builder.Services.AddScoped<IGenericRepository<Game>, GenericRepository<Game>>();
+builder.Services.AddScoped<IGenericRepository<Purchase>, GenericRepository<Purchase>>();
 
 #endregion
 

@@ -1,0 +1,17 @@
+﻿@page "/test"
+@rendermode InteractiveServer
+
+<h3>Test</h3>
+
+@if (!string.IsNullOrEmpty(test))
+{
+    <p>@test</p>
+}
+
+<button @onclick="Huiak">Хуяк</button>
+
+@code {
+    private string test = "";
+
+    private void Huiak() => test = "Huiak";
+}

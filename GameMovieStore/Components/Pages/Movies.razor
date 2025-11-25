@@ -1,0 +1,232 @@
+﻿@page "/movies"
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using GameMovieStore.Contracts.Services
+@using GameMovieStore.Dtos
+@using GameMovieStore.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IMovieService MovieService
+@inject IPurchaseService PurchaseService
+@inject IHttpContextAccessor Http
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="games-layout">
+    <div class="games-grid">
+
+        <h3>Movies</h3>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger">@_errorMessage</div>
+        }
+
+        <div class="card-grid">
+            @if (_movies is null)
+            {
+                <p>Loading...</p>
+            }
+            else
+            {
+                @foreach (var movie in _movies)
+                {
+                    <div class="card-item">
+                        <img src="@movie.Url" class="poster" />
+                        <h4>@movie.Name</h4>
+                        <p>@movie.Description</p>
+
+                        <div class="d-flex justify-content-between mt-2">
+                            <button class="btn btn-primary"
+                                    @onclick="async () => await BuyMovieAsync(movie.Id)">
+                                Buy
+                            </button>
+
+                            @if (_showAddForm)
+                            {
+                                <button class="btn btn-danger"
+                                        @onclick="async () => await DeleteMovieAsync(movie.Id)">
+                                    Delete
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    @if (_showAddForm)
+    {
+        <div class="add-game-card">
+            <h4 class="mb-3">Add New Movie</h4>
+
+            <div class="mb-3">
+                <label>Name</label>
+                <InputText class="form-control" @bind-Value="_newMovie.Name"/>
+            </div>
+
+            <div class="mb-3">
+                <label>Description</label>
+                <InputText class="form-control" @bind-Value="_newMovie.Description"/>
+            </div>
+
+            <div class="mb-3">
+                <label>Poster URL</label>
+                <InputText class="form-control" @bind-Value="_newMovie.Url"/>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-secondary" @onclick="HideAddForm">Cancel</button>
+                <button class="btn btn-primary" @onclick="AddMovieAsync">Add</button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-start mb-3">
+            <button class="add-btn" @onclick="ShowAddForm">+ Add Movie</button>
+        </div>
+    }
+</div>
+
+<style>
+    .add-btn {
+        padding: 6px 12px;
+        font-size: 14px;
+        border-radius: 6px;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        cursor: pointer;
+        height: fit-content;
+    }
+
+    .add-btn:hover {
+        opacity: 0.85;
+    }
+
+    .games-layout {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 20px;
+        align-items: start;
+    }
+
+    .add-game-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        width: 320px;
+        position: sticky;
+        top: 20px;
+    }
+
+    .games-grid h3 {
+        margin-bottom: 20px;
+    }
+
+    .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .card-item {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .poster {
+        width: 100%;
+        height: auto;
+        border-radius: 6px;
+        margin-bottom: 10px;
+    }
+</style>
+
+@code {
+    private IEnumerable<MovieDto>? _movies;
+    private string? _errorMessage;
+    private bool _showAddForm = false;
+    private MovieDto _newMovie = new();
+
+    private void ShowAddForm()
+    {
+        _newMovie = new MovieDto();
+        _showAddForm = true;
+    }
+
+    private void HideAddForm()
+    {
+        _showAddForm = false;
+    }
+
+    private async Task AddMovieAsync()
+    {
+        try
+        {
+            await MovieService.CreateMovieAsync(_newMovie);
+            _showAddForm = false;
+            await LoadMoviesAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to add movie: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteMovieAsync(long id)
+    {
+        try
+        {
+            await MovieService.DeleteMovieAsync(id);
+            await LoadMoviesAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to delete movie: {ex.Message}";
+        }
+    }
+
+    private async Task LoadMoviesAsync()
+    {
+        try
+        {
+            _movies = await MovieService.GetMovieDtosAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load movies: {ex.Message}";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMoviesAsync();
+    }
+
+    private async Task BuyMovieAsync(long movieId)
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity == null || !user.Identity.IsAuthenticated)
+            {
+                _errorMessage = "You must be logged in to buy a movie.";
+                return;
+            }
+
+            var userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier).Value);
+            await PurchaseService.CreatePurchase(userId, movieId, ProductTypes.Movie);
+            _errorMessage = null;
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to purchase movie: {ex.Message}";
+        }
+    }
+}

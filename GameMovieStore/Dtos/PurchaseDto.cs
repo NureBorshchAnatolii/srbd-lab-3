@@ -2,11 +2,13 @@
 
 namespace GameMovieStore.Dtos
 {
-    public class PurchaseDto
+    public class PurchaseDto<T> : IPurchaseDto
     {
         public long Id { get; set; }
         public DateTime CreateDate { get; set; }
         public ProductTypes ProductType { get; set; }
-        public object Item { get; set; } = null!;
+        public T Item { get; set; } = default!;
+
+        object IPurchaseDto.Item => Item!;
     }
 }

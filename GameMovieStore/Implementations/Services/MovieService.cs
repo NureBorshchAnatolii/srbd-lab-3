@@ -21,6 +21,23 @@ namespace GameMovieStore.Implementations.Services
             return mappedMovies;
         }
 
+        public async Task CreateMovieAsync(MovieDto movieDto)
+        {
+            Movie newMovie = new Movie()
+            {
+                Name = movieDto.Name,
+                Description = movieDto.Description,
+                Url = movieDto.Url,
+            };
+            await _movieRepository.AddAsync(newMovie);
+        }
+
+        public async Task DeleteMovieAsync(long movieId)
+        {
+            Movie movie = await _movieRepository.GetByIdAsync(movieId);
+            await _movieRepository.DeleteAsync(movie);
+        }
+
         private static MovieDto MapToMovieDto(Movie movie)
         {
             return new MovieDto()

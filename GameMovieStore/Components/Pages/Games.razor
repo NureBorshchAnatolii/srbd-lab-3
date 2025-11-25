@@ -1,0 +1,228 @@
+﻿@page "/games"
+@rendermode InteractiveServer
+
+@using System.Security.Claims
+@using GameMovieStore.Contracts.Services
+@using GameMovieStore.Dtos
+@using GameMovieStore.Enums
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IGameService GameService
+@inject IPurchaseService PurchaseService
+@inject IHttpContextAccessor Http
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime Js
+
+
+<div class="games-layout">
+    <div class="games-grid">
+
+        <h3>Games</h3>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger">@_errorMessage</div>
+        }
+
+        <div class="card-grid">
+            @if (_games is null)
+            {
+                <p>Loading...</p>
+            }
+            else
+            {
+                @foreach (var game in _games)
+                {
+                    <div class="card-item">
+                        <h4>@game.Name</h4>
+                        <p>@game.Description</p>
+                        <p><b>Genre:</b> @game.Genre</p>
+
+                        <div class="d-flex justify-content-between mt-2">
+                            <button class="btn btn-primary"
+                                    @onclick="async () => await BuyAsync(game.Id)">
+                                Buy
+                            </button>
+
+                            @if (_showAddForm)
+                            {
+                                <button class="btn btn-danger"
+                                        @onclick="async () => await DeleteGameAsync(game.Id)">
+                                    Delete
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+    @if (_showAddForm)
+    {
+        <div class="add-game-card">
+            <h4 class="mb-3">Add New Game</h4>
+
+            <div class="mb-3">
+                <label>Name</label>
+                <InputText class="form-control" @bind-Value="_newGame.Name"/>
+            </div>
+
+            <div class="mb-3">
+                <label>Description</label>
+                <InputText class="form-control" @bind-Value="_newGame.Description"/>
+            </div>
+
+            <div class="mb-3">
+                <label>Genre</label>
+                <InputText class="form-control" @bind-Value="_newGame.Genre"/>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-secondary" @onclick="HideAddForm">Cancel</button>
+                <button class="btn btn-primary" @onclick="AddGameAsync">Add</button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-start mb-3">
+            <button class="add-btn" @onclick="ShowAddForm">+ Add Game</button>
+        </div>
+    }
+</div>
+
+<style>
+    .add-btn {
+        padding: 6px 12px;
+        font-size: 14px;
+        border-radius: 6px;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        cursor: pointer;
+        height: fit-content;
+    }
+
+    .add-btn:hover {
+        opacity: 0.85;
+    }
+
+    .games-layout {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 20px;
+        align-items: start;
+    }
+
+    .add-game-card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        width: 320px;
+        position: sticky;
+        top: 20px;
+    }
+
+    .games-grid h3 {
+        margin-bottom: 20px;
+    }
+
+    .card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .card-item {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+</style>
+
+@code {
+    IEnumerable<GameDto>? _games;
+    private string? _errorMessage;
+    private bool _showAddForm = false;
+    private GameDto _newGame = new();
+
+    private void ShowAddForm()
+    {
+        _newGame = new GameDto();
+        _showAddForm = true;
+    }
+
+    private void HideAddForm()
+    {
+        _showAddForm = false;
+    }
+
+    private async Task AddGameAsync()
+    {
+        try
+        {
+            await GameService.CreateGameAsync(_newGame);
+            _showAddForm = false;
+
+            await LoadGamesAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to add game: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteGameAsync(long id)
+    {
+        try
+        {
+            await GameService.DeleteGameAsync(id);
+            await LoadGamesAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to delete game: {ex.Message}";
+        }
+    }
+
+    private async Task LoadGamesAsync()
+    {
+        try
+        {
+            _games = await GameService.GetGamesDtosAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load games: {ex.Message}";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGamesAsync();
+    }
+
+    private async Task BuyAsync(long gameId)
+    {
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity == null || !user.Identity.IsAuthenticated)
+            {
+                _errorMessage = "You must be logged in to buy a game.";
+                return;
+            }
+
+            var userId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier).Value);
+            await PurchaseService.CreatePurchase(userId, gameId, ProductTypes.Game);
+            _errorMessage = null;
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to purchase game: {ex.Message}";
+        }
+    }
+
+}

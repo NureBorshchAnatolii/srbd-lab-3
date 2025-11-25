@@ -1,0 +1,55 @@
+﻿@page "/purchases"
+@using System.Security.Claims
+@using GameMovieStore.Contracts.Services
+@using GameMovieStore.Dtos
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
+@inject IPurchaseService PurchaseService
+@inject IHttpContextAccessor Http
+
+<h3>Your Purchases</h3>
+
+@if (items is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="card-grid">
+        @foreach (var p in items)
+        {
+            <div class="card-item">
+                <p><b>Date:</b> @p.CreateDate</p>
+                <p><b>Type:</b> @p.ProductType</p>
+                @if (p is PurchaseDto<GameDto> pg)
+                {
+                    <p><b>Game:</b> @pg.Item.Name</p>
+                }
+                else if (p is PurchaseDto<MovieDto> pm)
+                {
+                    <p><b>Movie:</b> @pm.Item.Name</p>
+                    <img src="@pm.Item.Url" class="poster-small" />
+                }
+            </div>
+        }
+    </div>
+}
+
+
+@code {
+    IEnumerable<IPurchaseDto>? items;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var idClaim = Http.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier);
+
+        if (idClaim is null)
+        {
+            Http.HttpContext!.Response.Redirect("/login");
+            return;
+        }
+
+        var userId = Guid.Parse(idClaim.Value);
+
+        items = await PurchaseService.GetUsersPurchases(userId);
+    }
+}

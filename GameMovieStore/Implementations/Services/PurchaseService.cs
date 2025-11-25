@@ -26,7 +26,7 @@ namespace GameMovieStore.Implementations.Services
             _purchaseRepository = purchaseRepository;
         }
 
-        public async Task<IEnumerable<PurchaseDto>> GetUsersPurchases(Guid userId)
+        public async Task<IEnumerable<IPurchaseDto>> GetUsersPurchases(Guid userId)
         {
             var usersPurchases = await _context.Purchases
                 .AsNoTracking()
@@ -98,42 +98,38 @@ namespace GameMovieStore.Implementations.Services
             return movies.All(x => x.Id != movieId);
         }
 
-        private static PurchaseDto MapToPurchaseDto(Purchase purchase)
+        private static IPurchaseDto MapToPurchaseDto(Purchase purchase)
         {
-            var purchaseDto = new PurchaseDto()
+            if (purchase.MovieId != null)
+            {
+                return new PurchaseDto<MovieDto>
+                {
+                    Id = purchase.Id,
+                    CreateDate = purchase.CreateDate,
+                    ProductType = ProductTypes.Movie,
+                    Item = new MovieDto
+                    {
+                        Id = purchase.MovieId.Value,
+                        Name = purchase.Movie!.Name,
+                        Description = purchase.Movie.Description,
+                        Url = purchase.Movie!.Url
+                    }
+                };
+            }
+
+            return new PurchaseDto<GameDto>
             {
                 Id = purchase.Id,
                 CreateDate = purchase.CreateDate,
-            };
-            
-            object item = null;
-
-            if (purchase.MovieId != null)
-            {
-                purchaseDto.ProductType = ProductTypes.Movie;
-                purchaseDto.Item = new MovieDto()
-                {
-                    Id = purchase.MovieId.Value,
-                    Name = purchase.Movie!.Name,
-                    Description = purchase.Movie.Description,
-                    Url = purchase.Movie!.Url,
-                };
-            }
-            else if (purchase.GameId != null)
-            {
-                purchaseDto.ProductType = ProductTypes.Game;
-                purchaseDto.Item = new GameDto()
+                ProductType = ProductTypes.Game,
+                Item = new GameDto
                 {
                     Id = purchase.GameId.Value,
                     Name = purchase.Game!.Name,
                     Description = purchase.Game.Description,
-                    Genre = purchase.Game!.Genre,
-                };
-            }
-            
-            purchaseDto.Item = item;
-            
-            return purchaseDto;
+                    Genre = purchase.Game!.Genre
+                }
+            };
         }
     }
 }
