@@ -1,10 +1,10 @@
 using GameMovieStore.Components;
 using GameMovieStore.Contracts.Repositories;
 using GameMovieStore.Contracts.Services;
-using GameMovieStore.Implementations.Repositories;
 using GameMovieStore.Implementations.Services;
 using GameMovieStore.Models;
 using GameMovieStore.Persistence.DbContext;
+using GameMovieStore.Persistence.Repositories;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,17 +12,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 #region Myservices
 
-builder.Services.AddDbContext<GameMovieStoreDbContext>(options => {
+builder.Services.AddDbContext<GameMovieStoreDbContext>(options =>
+{
     string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    
+
     if (connectionString == null)
         throw new NullReferenceException("Connection string is null");
-    
+
     options.UseSqlServer(connectionString);
 });
 
 // Security
-builder.Services.AddHttpContextAccessor(); 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -53,6 +54,13 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<GameMovieStoreDbContext>();
+    db.Database.Migrate();
+    db.EnsureStoredProceduresAndFunctions();
 }
 
 app.UseAuthentication();

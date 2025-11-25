@@ -4,6 +4,7 @@ using GameMovieStore.Dtos;
 using GameMovieStore.Enums;
 using GameMovieStore.Models;
 using GameMovieStore.Persistence.DbContext;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace GameMovieStore.Implementations.Services
@@ -45,15 +46,50 @@ namespace GameMovieStore.Implementations.Services
             if (productType == ProductTypes.Game)
             {
                 var game = await CreateGamePurchase(userId, productId);
-                
                 await _purchaseRepository.AddAsync(game);
             }
             else if (productType == ProductTypes.Movie)
             {
                 var movie = await CreateMoviePurchase(userId, productId);
-                
                 await _purchaseRepository.AddAsync(movie);
             }
+        }
+
+        
+        public async Task<IEnumerable<PurchasePerDay>> GetMostPopularGameDayAsync(DateTime start, DateTime end)
+        {
+            var startParam = new SqlParameter("@StartDate", start);
+            var endParam = new SqlParameter("@EndDate", end);
+
+            var result = await _context.Database
+                .SqlQuery<PurchasePerDay>($@"
+                    SELECT * 
+                    FROM dbo.MostPopularGameDay({start}, {end})
+                ")
+                .ToListAsync();
+
+
+            return result;
+        }
+
+        public async Task<string> UpdateUserContentRoleAsync(Guid userId)
+        {
+            var param = new SqlParameter("@UserId", userId);
+            try
+            {
+                await _context.Database.ExecuteSqlRawAsync("EXEC UpdateUserContentRole @UserId", param);
+                return "Role updated successfully";
+            }
+            catch (Exception ex)
+            {
+                return $"Error: {ex.Message}";
+            }
+        }
+
+        public async Task<string> GetUserContentRoleAsync(Guid userId)
+        {
+            var user = await _context.Users.AsNoTracking().FirstAsync(x => x.Id == userId);
+            return user.ContentRole;
         }
 
         private async Task<Purchase> CreateGamePurchase(Guid userId, long gameId)

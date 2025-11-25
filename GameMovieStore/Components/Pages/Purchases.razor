@@ -2,19 +2,19 @@
 @using System.Security.Claims
 @using GameMovieStore.Contracts.Services
 @using GameMovieStore.Dtos
-@using Microsoft.EntityFrameworkCore.Metadata.Internal
 @inject IPurchaseService PurchaseService
 @inject IHttpContextAccessor Http
+@rendermode InteractiveServer
 
 <h3>Your Purchases</h3>
 
-@if (items is null)
-{
-    <p>Loading...</p>
-}
-else
-{
-    <div class="card-grid">
+<div class="card-grid">
+    @if (items is null)
+    {
+        <p>Loading...</p>
+    }
+    else
+    {
         @foreach (var p in items)
         {
             <div class="card-item">
@@ -31,12 +31,106 @@ else
                 }
             </div>
         }
-    </div>
-}
+    }
+</div>
 
+<div class="floating-cards">
+
+    <div class="floating-card">
+        <button class="toggle-btn" @onclick="() => ShowPopularGameCard = !ShowPopularGameCard">
+            Most Popular Game Day
+        </button>
+
+        @if (ShowPopularGameCard)
+        {
+            <div class="card-content">
+                <label>Start Date:</label>
+                <InputDate @bind-Value="PopularGameStart" />
+                <label>End Date:</label>
+                <InputDate @bind-Value="PopularGameEnd" />
+                <button class="btn btn-primary mt-2" @onclick="LoadPopularGameDayAsync">Show</button>
+
+                @if (PopularGameResults?.Any() ?? false)
+                {
+                    <ul class="mt-2">
+                        @foreach (var d in PopularGameResults)
+                        {
+                            <li>@d.PurchaseDate.ToShortDateString() - @d.PurchaseCount purchases</li>
+                        }
+                    </ul>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="floating-card">
+        <button class="toggle-btn" @onclick="() => ShowUpdateRoleCard = !ShowUpdateRoleCard">
+            Update User Role
+        </button>
+
+        @if (ShowUpdateRoleCard)
+        {
+            <div class="card-content">
+                <p><b>Current Role:</b> @CurrentRoleMessage</p>
+                <button class="btn btn-primary mt-2" @onclick="UpdateUserRoleAsync">Update Role</button>
+            </div>
+        }
+    </div>
+
+</div>
+
+<style>
+    .floating-cards {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        z-index: 1000;
+    }
+
+    .floating-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        padding: 10px;
+        width: 280px;
+    }
+
+    .toggle-btn {
+        width: 100%;
+        padding: 6px;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .toggle-btn:hover {
+        opacity: 0.85;
+    }
+
+    .card-content {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+</style>
 
 @code {
     IEnumerable<IPurchaseDto>? items;
+
+    private bool ShowPopularGameCard { get; set; } = false;
+    private bool ShowUpdateRoleCard { get; set; } = false;
+
+    private DateTime PopularGameStart { get; set; } = DateTime.Today.AddDays(-30);
+    private DateTime PopularGameEnd { get; set; } = DateTime.Today;
+    private IEnumerable<PurchasePerDay>? PopularGameResults;
+
+    private string CurrentRoleMessage { get; set; } = "Loading...";
 
     protected override async Task OnInitializedAsync()
     {
@@ -51,5 +145,23 @@ else
         var userId = Guid.Parse(idClaim.Value);
 
         items = await PurchaseService.GetUsersPurchases(userId);
+
+        CurrentRoleMessage = await PurchaseService.GetUserContentRoleAsync(userId);
+    }
+
+    private async Task LoadPopularGameDayAsync()
+    {
+        PopularGameResults = await PurchaseService.GetMostPopularGameDayAsync(PopularGameStart, PopularGameEnd);
+    }
+
+    private async Task UpdateUserRoleAsync()
+    {
+        var idClaim = Http.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier);
+        if (idClaim is null) return;
+
+        var userId = Guid.Parse(idClaim.Value);
+        await PurchaseService.UpdateUserContentRoleAsync(userId);
+
+        CurrentRoleMessage = await PurchaseService.GetUserContentRoleAsync(userId);
     }
 }

@@ -2,7 +2,7 @@
 using GameMovieStore.Persistence.DbContext;
 using Microsoft.EntityFrameworkCore;
 
-namespace GameMovieStore.Implementations.Repositories
+namespace GameMovieStore.Persistence.Repositories
 {
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
