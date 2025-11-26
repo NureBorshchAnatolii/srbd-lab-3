@@ -29,12 +29,13 @@ namespace GameMovieStore.Persistence.EntityConfigurations
 
             builder.HasOne(x => x.Movie)
                 .WithMany(x => x.Purchases)
-                .HasForeignKey(x => x.MovieId);
+                .HasForeignKey(x => x.MovieId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasOne(x => x.Game)
                 .WithMany(x => x.Purchases)
-                .HasForeignKey(x => x.GameId);
-            
+                .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 

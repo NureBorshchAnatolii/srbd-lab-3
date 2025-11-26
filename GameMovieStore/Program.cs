@@ -44,7 +44,6 @@ builder.Services.AddScoped<IGenericRepository<Purchase>, GenericRepository<Purch
 
 #endregion
 
-
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
