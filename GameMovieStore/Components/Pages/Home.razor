@@ -2,4 +2,41 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Welcome to game movie shop</h1>
+<div class="home-container">
+    <div class="welcome-card">
+        <h1 class="title">Welcome to Game & Movie Shop</h1>
+        <p class="subtitle">Discover, purchase and enjoy your favorite games and movies</p>
+    </div>
+</div>
+
+<style>
+    .home-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 80vh;
+        padding: 20px;
+    }
+
+    .welcome-card {
+        padding: 40px 50px;
+        border-radius: 20px;
+        text-align: center;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        backdrop-filter: blur(10px);
+        max-width: 600px;
+    }
+
+    .title {
+        font-size: 42px;
+        margin-bottom: 15px;
+        color: #0d3b66;
+        font-weight: 800;
+    }
+
+    .subtitle {
+        font-size: 18px;
+        margin-bottom: 30px;
+        color: #333;
+    }
+</style>
